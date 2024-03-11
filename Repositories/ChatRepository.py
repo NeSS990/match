@@ -1,3 +1,4 @@
+# chat_repository.py
 class ChatRepository:
     def __init__(self):
         self.chats = []
