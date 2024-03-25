@@ -2,7 +2,7 @@ from Classes.User import User
 from Classes.Profile import Profile
 from Classes.Gift import Gift
 from Classes.Chat import Chat
-from Repositories.UserRepository import UserRepository
+from Repositories.UserRespository import UserRepository
 from Repositories.ChatRepository import ChatRepository
 from Repositories.GiftRepository import GiftRepository
 
@@ -14,7 +14,6 @@ gift_repository = GiftRepository()
 # Пример использования
 user1 = User(user_id=1, username="user1")
 profile1 = Profile(profile_id=1, user_id=user1.user_id, bio="Hello, I'm user1!")
-user1.profile = profile1  # Устанавливаем профиль пользователя
 user_repository.save_user(user1)
 
 chat1 = Chat(chat_id=1, user_id=user1.user_id)

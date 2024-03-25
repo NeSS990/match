@@ -13,13 +13,7 @@ class Chat:
     def add_match(self, match):
         self.matches.append(match)
 
-    def initiate_chat(self, other_user):
-        # Логика инициации чата после мэтча
-        pass
 
-    def check_inactive_chats(self):
-        # Логика удаления чатов без активности
-        pass
     def __eq__(self, other):
         if isinstance(other, Chat):
             return (
