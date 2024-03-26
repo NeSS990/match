@@ -1,3 +1,42 @@
+from abc import ABC, abstractmethod
+import os
+from lxml import etree
+
+class BaseRepository(ABC):
+    @abstractmethod
+    def save(self, data):
+        pass
+
+    @abstractmethod
+    def find(self, query):
+        pass
+
+class XMLRepository(BaseRepository):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def save(self, data):
+        # Создаем корневой элемент XML, если файл не существует
+        if not os.path.exists(self.file_path):
+            root = etree.Element("data")
+            tree = etree.ElementTree(root)
+            tree.write(self.file_path, xml_declaration=True, encoding='utf-8', pretty_print=True)
+        
+        # Добавляем новые данные в XML файл
+        tree = etree.parse(self.file_path)
+        root = tree.getroot()
+        new_data_element = etree.Element("item")
+        for key, value in data.items():
+            child = etree.Element(key)
+            child.text = str(value)
+            new_data_element.append(child)
+        root.append(new_data_element)
+        tree.write(self.file_path, xml_declaration=True, encoding='utf-8', pretty_print=True)
+
+    def find(self, query):
+        tree = etree.parse(self.file_path)
+        return tree.xpath(query)
+    
 class ChatRepository:
     def __init__(self):
         self.chats = []

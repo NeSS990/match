@@ -23,64 +23,44 @@ class MockUserRepository:
 
 class TestBusinessRulesService(unittest.TestCase):
     def test_removeduplicaterecommendation(self):
-        # Создаем фиктивные данные
         user1_id = 1
         user2_id = 2
-        # Создаем фиктивные объекты для репозиториев
         chat_repository = MockChatRepository()
         match_repository = MockMatchRepository()
-        user_repository = MockUserRepository()  # Используем мок UserRepository
-        # Создаем объект сервиса
+        user_repository = MockUserRepository()
         business_service = BusinessRulesService(chat_repository, match_repository, user_repository)
-        # Применяем бизнес-правило
         business_service.remove_duplicate_recommendation(user1_id, user2_id)
-        # Проверяем, что дубликаты были удалены из рекомендаций
         self.assertNotIn(user1_id, user_repository.get_recommendations(user2_id))
         self.assertNotIn(user2_id, user_repository.get_recommendations(user1_id))
 
     def test_checklikescreatechat(self):
-        # Создаем фиктивные данные
         user1_id = 1
         user2_id = 2
-        # Создаем фиктивные объекты для репозиториев
         chat_repository = MockChatRepository()
         match_repository = MockMatchRepository()
-        user_repository = MockUserRepository()  # Используем мок UserRepository
-        # Создаем объект сервиса
+        user_repository = MockUserRepository()
         business_service = BusinessRulesService(chat_repository, match_repository, user_repository)
-        # Создаем мэтч между пользователями
         match_repository.save_match(Match(user1_id, user2_id))
-        # Применяем бизнес-правило
         business_service.check_likes(user1_id, user2_id)
-        # Проверяем, что чат был создан
         self.assertTrue(chat_repository.find_chat_by_users(user1_id, user2_id) is not None)
 
     def test_checklikesremoveprofiles(self):
-        # Создаем фиктивные данные
         user1_id = 1
         user2_id = 2
-        # Создаем фиктивные объекты для репозиториев
         chat_repository = MockChatRepository()
         match_repository = MockMatchRepository()
-        user_repository = MockUserRepository()  # Используем мок UserRepository
-        # Создаем объект сервиса
+        user_repository = MockUserRepository()
         business_service = BusinessRulesService(chat_repository, match_repository, user_repository)
-        # Применяем бизнес-правило
         business_service.check_likes(user1_id, user2_id)
-        # Проверяем, что профили были удалены из списка лайкнутых
         self.assertNotIn(user2_id, user_repository.get_recommendations(user1_id))
         self.assertNotIn(user1_id, user_repository.get_recommendations(user2_id))
 
     def test_removeinactivechats(self):
-        # Создаем фиктивные объекты для репозиториев
         chat_repository = MockChatRepository()
         match_repository = MockMatchRepository()
-        user_repository = MockUserRepository()  # Используем мок UserRepository
-        # Создаем объект сервиса
+        user_repository = MockUserRepository()
         business_service = BusinessRulesService(chat_repository, match_repository, user_repository)
-        # Применяем бизнес-правило
         business_service.remove_inactive_chats()
-        # Проверяем, что неактивные чаты были удалены
         self.assertEqual(len(chat_repository.chats), 0)
 
 
