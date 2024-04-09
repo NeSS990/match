@@ -1,31 +1,31 @@
-from Classes.User import User
-from Classes.Profile import Profile
-from Classes.Gift import Gift
-from Classes.Chat import Chat
-from Repositories.UserRespository import UserRepository
-from Repositories.ChatRepository import ChatRepository
-from Repositories.GiftRepository import GiftRepository
+from Repositories.Repositories import XMLRepository
+from lxml import etree
 
-# Создаем фейковый репозиторий
-user_repository = UserRepository()
-chat_repository = ChatRepository()
-gift_repository = GiftRepository()
+def save_user_to_xml(user_data):
+    user_repository = XMLRepository("users.xml")
+    user_repository.save(user_data)
 
-# Пример использования
-user1 = User(user_id=1, username="user1")
-profile1 = Profile(profile_id=1, user_id=user1.user_id, bio="Hello, I'm user1!")
-user_repository.save_user(user1)
+def find_users_by_age(min_age, max_age):
+    user_repository = XMLRepository("users.xml")
+    query = f"//item[age>={min_age} and age<={max_age}]"
+    users = user_repository.find(query)
+    return users
 
-chat1 = Chat(chat_id=1, user_id=user1.user_id)
-chat_repository.save_chat(chat1)
+if __name__ == "__main__":
+    # Сохранение пользователя в XML
+    user_data = {
+        "user_id": 1,
+        "username": "john_doe",
+        "profile": "I love hiking and traveling!",
+        "age": 30
+    }
+    save_user_to_xml(user_data)
 
-gift1 = Gift(gift_id=1, name="Teddy Bear", price=20)
-gift_repository.save_gift(gift1)
-
-# Пример получения пользователя и его чата из репозитория
-retrieved_user = user_repository.find_user_by_id(1)
-retrieved_chat = chat_repository.find_chat_by_id(1)
-
-# Выводим информацию
-print(f"User: {retrieved_user.username}, Profile: {retrieved_user.profile.bio}")
-print(f"Chat ID: {retrieved_chat.chat_id}, User ID: {retrieved_chat.user_id}")
+    # Поиск пользователей по возрасту
+    min_age = 25
+    max_age = 35
+    users = find_users_by_age(min_age, max_age)
+    print("Users aged between", min_age, "and", max_age, ":")
+    for user in users:
+        username = user.find("username").text
+        print(username)
