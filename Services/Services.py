@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-
+from Classes.Classes import Chat, Match, User
 class BusinessRulesService:
     def __init__(self, chat_repository, match_repository, user_repository):
         self.chat_repository = chat_repository
@@ -35,3 +35,11 @@ class BusinessRulesService:
         for chat in self.chat_repository.chats:
             if (now - chat.last_activity_time) > timedelta(hours=24):
                 self.chat_repository.chats.remove(chat)
+    def like(self, user: User, liked_user_id: int):
+        if user.user_id == liked_user_id:
+            print("Error: You cannot like yourself.")
+            return None
+        else:
+            user.likes.append(liked_user_id)
+            return user
+    

@@ -6,4 +6,4 @@
     <profile>I love hiking and traveling!</profile>
     <age>30</age>
   </item>
-<item><user_id>2</user_id><username>Artem</username><profile>I love hiking and traveling!</profile><age>10</age></item></data>
+<item><user_id>2</user_id><username>john_doe</username><profile>I love hiking and traveling!</profile><age>30</age></item><item><user_id>1</user_id><username>john_doe</username><profile>I love hiking and traveling!</profile><age>30</age></item><item><user_id>5</user_id><username>Artem</username><profile>Люблю читать</profile><age>16</age></item></data>

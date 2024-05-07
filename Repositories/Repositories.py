@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import os
+import json
 from lxml import etree
 
 class BaseRepository(ABC):
@@ -36,7 +37,38 @@ class XMLRepository(BaseRepository):
     def find(self, query):
         tree = etree.parse(self.file_path)
         return tree.xpath(query)
-    
+
+class JSONRepository(BaseRepository):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def save(self, data):
+        with open(self.file_path, 'a') as f:  # Открытие файла в режиме добавления ('a')
+            json.dump(data, f, ensure_ascii=False)
+            f.write('\n')  # Добавление новой строки между записями
+
+    def find(self, query):
+        with open(self.file_path, 'r') as f:
+            data = json.load(f)
+        # Ваша логика поиска в JSON
+        pass
+
+
+
+class RelationalRepository(BaseRepository):
+    def __init__(self, connection_string):
+        self.connection_string = connection_string
+        # Ваша логика инициализации подключения к реляционной базе данных
+        pass
+
+    def save(self, data):
+        # Ваша логика сохранения данных в реляционной базе данных
+        pass
+
+    def find(self, query):
+        # Ваша логика поиска данных в реляционной базе данных
+        pass
+
 class ChatRepository:
     def __init__(self):
         self.chats = []
@@ -95,3 +127,29 @@ class UserRepository:
     def remove_like(self, user_id, liked_user_id):
         if liked_user_id in self.user_likes.get(user_id, []):
             self.user_likes[user_id].remove(liked_user_id)
+
+class RepositoryFactory(ABC):
+    @abstractmethod
+    def create_repository(self) -> BaseRepository:
+        pass
+
+class XMLRepositoryFactory(RepositoryFactory):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def create_repository(self) -> BaseRepository:
+        return XMLRepository(self.file_path)
+
+class JSONRepositoryFactory(RepositoryFactory):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def create_repository(self) -> BaseRepository:
+        return JSONRepository(self.file_path)
+
+class RelationalRepositoryFactory(RepositoryFactory):
+    def __init__(self, connection_string):
+        self.connection_string = connection_string
+
+    def create_repository(self) -> BaseRepository:
+        return RelationalRepository(self.connection_string)

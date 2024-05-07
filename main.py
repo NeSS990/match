@@ -1,31 +1,77 @@
-from Repositories.Repositories import XMLRepository
-from lxml import etree
+from Repositories.Repositories import JSONRepositoryFactory, RelationalRepositoryFactory, XMLRepositoryFactory
 
-def save_user_to_xml(user_data):
-    user_repository = XMLRepository("users.xml")
-    user_repository.save(user_data)
 
-def find_users_by_age(min_age, max_age):
-    user_repository = XMLRepository("users.xml")
-    query = f"//item[age>={min_age} and age<={max_age}]"
-    users = user_repository.find(query)
-    return users
+def create_user(repository):
+    user_id = int(input("Введите ID пользователя: "))
+    username = input("Введите имя пользователя: ")
+    profile = input("Введите профиль пользователя: ")
+    age = int(input("Введите возраст пользователя: "))
+
+    user_data = {
+        "user_id": user_id,
+        "username": username,
+        "profile": profile,
+        "age": age
+    }
+
+    repository.save(user_data)
+    print("Пользователь успешно создан.")
+
+def login_as_user(repository):
+    user_id = int(input("Введите ID пользователя: "))
+
+    users = repository.find_users()
+    for user in users:
+        if user["user_id"] == user_id:
+            print(f"ID: {user['user_id']}")
+            print(f"Имя: {user['username']}")
+            print(f"Профиль: {user['profile']}")
+            print(f"Возраст: {user['age']}")
+            like = input("Поставить лайк (y/n)? ").lower()
+            if like == 'y':
+                # Ваш код для постановки лайка
+                pass
+            else:
+                print("Лайк не поставлен.")
+            break
+    else:
+        print("Пользователь с указанным ID не найден.")
+
+def main_menu(repository):
+    while True:
+        print("Меню:")
+        print("1) Создать пользователя")
+        print("2) Зайти под пользователем")
+        print("3) Выйти из программы")
+
+        choice = input("Выберите действие: ")
+
+        if choice == '1':
+            create_user(repository)
+        elif choice == '2':
+            login_as_user(repository)
+        elif choice == '3':
+            print("До свидания!")
+            break
+        else:
+            print("Некорректный ввод. Пожалуйста, выберите действие из списка.")
 
 if __name__ == "__main__":
-    # Сохранение пользователя в XML
-    user_data = {
-        "user_id": 2,
-        "username": "Artem",
-        "profile": "I love hiking and traveling!",
-        "age": 10
-    }
-    save_user_to_xml(user_data)
+    print("Выберите тип репозитория:")
+    print("1) XML")
+    print("2) JSON")
+    print("3) Реляционный")
+    
+    repository_choice = input("Ваш выбор: ")
+    if repository_choice == '1':
+        repository_factory = XMLRepositoryFactory("users.xml")
+    elif repository_choice == '2':
+        repository_factory = JSONRepositoryFactory("users.json")
+    elif repository_choice == '3':
+        repository_factory = RelationalRepositoryFactory("connection_string")
+    else:
+        print("Некорректный выбор репозитория.")
+        exit()
 
-    # Поиск пользователей по возрасту
-    min_age = 25
-    max_age = 35
-    users = find_users_by_age(min_age, max_age)
-    print("Users aged between", min_age, "and", max_age, ":")
-    for user in users:
-        username = user.find("username").text
-        print(username)
+    repository = repository_factory.create_repository()
+    main_menu(repository)
