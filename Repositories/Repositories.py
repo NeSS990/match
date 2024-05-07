@@ -2,72 +2,9 @@ from abc import ABC, abstractmethod
 import os
 import json
 from lxml import etree
+import mysql.connector
+import xml.etree.ElementTree as et
 
-class BaseRepository(ABC):
-    @abstractmethod
-    def save(self, data):
-        pass
-
-    @abstractmethod
-    def find(self, query):
-        pass
-
-class XMLRepository(BaseRepository):
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def save(self, data):
-        # Создаем корневой элемент XML, если файл не существует
-        if not os.path.exists(self.file_path):
-            root = etree.Element("data")
-            tree = etree.ElementTree(root)
-            tree.write(self.file_path, xml_declaration=True, encoding='utf-8', pretty_print=True)
-        
-        # Добавляем новые данные в XML файл
-        tree = etree.parse(self.file_path)
-        root = tree.getroot()
-        new_data_element = etree.Element("item")
-        for key, value in data.items():
-            child = etree.Element(key)
-            child.text = str(value)
-            new_data_element.append(child)
-        root.append(new_data_element)
-        tree.write(self.file_path, xml_declaration=True, encoding='utf-8', pretty_print=True)
-
-    def find(self, query):
-        tree = etree.parse(self.file_path)
-        return tree.xpath(query)
-
-class JSONRepository(BaseRepository):
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def save(self, data):
-        with open(self.file_path, 'a') as f:  # Открытие файла в режиме добавления ('a')
-            json.dump(data, f, ensure_ascii=False)
-            f.write('\n')  # Добавление новой строки между записями
-
-    def find(self, query):
-        with open(self.file_path, 'r') as f:
-            data = json.load(f)
-        # Ваша логика поиска в JSON
-        pass
-
-
-
-class RelationalRepository(BaseRepository):
-    def __init__(self, connection_string):
-        self.connection_string = connection_string
-        # Ваша логика инициализации подключения к реляционной базе данных
-        pass
-
-    def save(self, data):
-        # Ваша логика сохранения данных в реляционной базе данных
-        pass
-
-    def find(self, query):
-        # Ваша логика поиска данных в реляционной базе данных
-        pass
 
 class ChatRepository:
     def __init__(self):
@@ -108,7 +45,6 @@ class MatchRepository:
                (match.user1_id == user2_id and match.user2_id == user1_id):
                 return match
         return None
-    
 
 class UserRepository:
     def __init__(self):
@@ -127,29 +63,102 @@ class UserRepository:
     def remove_like(self, user_id, liked_user_id):
         if liked_user_id in self.user_likes.get(user_id, []):
             self.user_likes[user_id].remove(liked_user_id)
+class RelationalRepository:
+    """Репозиторий для работы с реляционной базой данных."""
 
-class RepositoryFactory(ABC):
-    @abstractmethod
-    def create_repository(self) -> BaseRepository:
-        pass
-
-class XMLRepositoryFactory(RepositoryFactory):
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def create_repository(self) -> BaseRepository:
-        return XMLRepository(self.file_path)
-
-class JSONRepositoryFactory(RepositoryFactory):
-    def __init__(self, file_path):
-        self.file_path = file_path
-
-    def create_repository(self) -> BaseRepository:
-        return JSONRepository(self.file_path)
-
-class RelationalRepositoryFactory(RepositoryFactory):
     def __init__(self, connection_string):
         self.connection_string = connection_string
 
-    def create_repository(self) -> BaseRepository:
-        return RelationalRepository(self.connection_string)
+    def save(self, user):
+        # Подключаемся к базе данных
+        connection = mysql.connector.connect(**self.connection_string)
+        cursor = connection.cursor()
+
+        # Выполняем SQL-запрос для сохранения пользователя
+        cursor.execute("INSERT INTO users (user_id, username, profile, likes) VALUES (%s, %s, %s, %s)",
+                       (user.user_id, user.username, user.profile, ','.join(map(str, user.likes))))
+
+        # Фиксируем изменения и закрываем соединение
+        connection.commit()
+        connection.close()
+class JSONRepository:
+    """Репозиторий для сериализации в формат JSON."""
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def start_object(self, object_name, object_id):
+        self._current_object = {'id': object_id}
+
+    def add_property(self, name, value):
+        self._current_object[name] = value
+
+    def to_str(self):
+        return json.dumps(self._current_object)
+
+    def save(self, user):
+        self.start_object('user', user.user_id)
+        self.add_property('username', user.username)
+        self.add_property('profile', user.profile)
+        self.add_property('likes', user.likes)
+        with open(self.file_path, 'w') as file:
+            file.write(self.to_str())
+
+class XMLRepository:
+    """Репозиторий для сериализации в формат XML."""
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def start_object(self, object_name, object_id):
+        self._element = et.Element(object_name, attrib={'id': str(object_id)})
+
+    def add_property(self, name, value):
+        prop = et.SubElement(self._element, name)
+        prop.text = str(value)
+
+    def to_str(self):
+        return et.tostring(self._element, encoding='unicode')
+
+    def save(self, user):
+        self.start_object('user', user.user_id)
+        self.add_property('username', user.username)
+        self.add_property('profile', user.profile)
+        self.add_property('likes', str(user.likes))
+        with open(self.file_path, 'wb') as file:
+            file.write(self.to_str().encode())
+
+class ObjectSerializer:
+    """Сериализатор объектов."""
+
+    def __init__(self, factory):
+        self.factory = factory
+
+    def serialize(self, serializable, format):
+        repository = self.factory.create_repository(format)
+        serializable.serialize(repository)
+        return repository.to_str()
+class RepositoryFactory:
+    """Фабрика репозиториев."""
+
+    def create_repository(self, format, file_path=None, connection_string=None):
+        if format == 'JSON':
+            return self.create_json_repository(file_path)
+        elif format == 'XML':
+            return self.create_xml_repository(file_path)
+        elif format == 'Relational':
+            return self.create_relational_repository(connection_string)
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
+    def create_json_repository(self, file_path):
+        return JSONRepository(file_path)
+
+    def create_xml_repository(self, file_path):
+        return XMLRepository(file_path)
+
+    def create_relational_repository(self, connection_string):
+        return RelationalRepository(connection_string)
+
+
+

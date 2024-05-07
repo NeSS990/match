@@ -1,77 +1,48 @@
-from Repositories.Repositories import JSONRepositoryFactory, RelationalRepositoryFactory, XMLRepositoryFactory
+from Classes.Classes import User
+from Repositories.Repositories import RepositoryFactory, ObjectSerializer
 
+def main():
+    # Создаем фабрику репозиториев
+    repository_factory = RepositoryFactory()
+    connection_string = None
+    # Создаем объект сериализатора
+    object_serializer = ObjectSerializer(repository_factory)
 
-def create_user(repository):
-    user_id = int(input("Введите ID пользователя: "))
-    username = input("Введите имя пользователя: ")
-    profile = input("Введите профиль пользователя: ")
-    age = int(input("Введите возраст пользователя: "))
+    # Предлагаем пользователю выбрать формат для сериализации
+    print("Выберите формат для сериализации:")
+    print("1) JSON")
+    print("2) XML")
+    print("3) Реляционная база данных")
+    choice = input("Ваш выбор: ")
 
-    user_data = {
-        "user_id": user_id,
-        "username": username,
-        "profile": profile,
-        "age": age
-    }
-
-    repository.save(user_data)
-    print("Пользователь успешно создан.")
-
-def login_as_user(repository):
-    user_id = int(input("Введите ID пользователя: "))
-
-    users = repository.find_users()
-    for user in users:
-        if user["user_id"] == user_id:
-            print(f"ID: {user['user_id']}")
-            print(f"Имя: {user['username']}")
-            print(f"Профиль: {user['profile']}")
-            print(f"Возраст: {user['age']}")
-            like = input("Поставить лайк (y/n)? ").lower()
-            if like == 'y':
-                # Ваш код для постановки лайка
-                pass
-            else:
-                print("Лайк не поставлен.")
-            break
+    # Проверяем выбор пользователя и выбираем соответствующий формат
+    if choice == '1':
+        format = 'JSON'
+        file_path = 'users.json'  # Файл JSON для сохранения пользователей
+    elif choice == '2':
+        format = 'XML'
+        file_path = 'users.xml'  # Файл XML для сохранения пользователей
+    elif choice == '3':
+        format = 'Relational'
+        connection_string = {
+            'host': 'localhost',
+            'database': 'match',
+            'user': 'root',
+            'password': ''
+        }
     else:
-        print("Пользователь с указанным ID не найден.")
+        print("Некорректный ввод.")
+        return
 
-def main_menu(repository):
-    while True:
-        print("Меню:")
-        print("1) Создать пользователя")
-        print("2) Зайти под пользователем")
-        print("3) Выйти из программы")
+    # Создаем репозиторий пользователей
+    repository = repository_factory.create_repository(format, file_path=file_path, connection_string=connection_string)
 
-        choice = input("Выберите действие: ")
+    # Создаем пользователя
+    user = User(user_id=1, username="JohnDoe", profile="Some profile", likes=[2, 3, 4])
 
-        if choice == '1':
-            create_user(repository)
-        elif choice == '2':
-            login_as_user(repository)
-        elif choice == '3':
-            print("До свидания!")
-            break
-        else:
-            print("Некорректный ввод. Пожалуйста, выберите действие из списка.")
+    # Сериализуем и сохраняем пользователя
+    object_serializer.serialize(user, format)
+    repository.save(user)
 
 if __name__ == "__main__":
-    print("Выберите тип репозитория:")
-    print("1) XML")
-    print("2) JSON")
-    print("3) Реляционный")
-    
-    repository_choice = input("Ваш выбор: ")
-    if repository_choice == '1':
-        repository_factory = XMLRepositoryFactory("users.xml")
-    elif repository_choice == '2':
-        repository_factory = JSONRepositoryFactory("users.json")
-    elif repository_choice == '3':
-        repository_factory = RelationalRepositoryFactory("connection_string")
-    else:
-        print("Некорректный выбор репозитория.")
-        exit()
-
-    repository = repository_factory.create_repository()
-    main_menu(repository)
+    main()
