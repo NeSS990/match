@@ -5,6 +5,7 @@ def main():
     # Создаем фабрику репозиториев
     repository_factory = RepositoryFactory()
     connection_string = None
+    file_path = None
     # Создаем объект сериализатора
     object_serializer = ObjectSerializer(repository_factory)
 
